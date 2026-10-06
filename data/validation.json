@@ -1,0 +1,156 @@
+{
+  "check": "circle (ellipse_01), diameter D = 1, Re = U D / nu = 40, dataset settings",
+  "quantities": {
+    "drag_coefficient": "Cd = drag / (0.5 rho U^2 D), from SU2",
+    "wake_length": "Lw / D: centreline distance from the back of the circle to where u changes sign",
+    "separation_angle": "degrees from the front stagnation point to where the velocity along the wall changes sign, read 0.002 D from the wall, mean of upper and lower side"
+  },
+  "domain": {
+    "xmin": -20.0,
+    "xmax": 40.0,
+    "ymin": -20.0,
+    "ymax": 20.0,
+    "blockage": 0.025
+  },
+  "meshes": [
+    {
+      "mesh": "coarse",
+      "cell_size_multiplier": 2.0,
+      "nodes": 10181,
+      "wall_nodes": 124,
+      "wake_length": 2.2251,
+      "separation_angle": 127.832,
+      "separation_angle_upper_lower": [
+        127.825,
+        127.838
+      ],
+      "drag_coefficient": 1.52707,
+      "lift_coefficient": 0.00033,
+      "iterations": 288,
+      "final_rms_pressure_log10": -9.012,
+      "seconds": 16.4
+    },
+    {
+      "mesh": "dataset",
+      "cell_size_multiplier": 1.0,
+      "nodes": 39843,
+      "wall_nodes": 248,
+      "wake_length": 2.2553,
+      "separation_angle": 127.678,
+      "separation_angle_upper_lower": [
+        127.681,
+        127.675
+      ],
+      "drag_coefficient": 1.53398,
+      "lift_coefficient": 8e-05,
+      "iterations": 555,
+      "final_rms_pressure_log10": -9.01,
+      "seconds": 114.1
+    },
+    {
+      "mesh": "fine",
+      "cell_size_multiplier": 0.5,
+      "nodes": 157273,
+      "wall_nodes": 495,
+      "wake_length": 2.2647,
+      "separation_angle": 126.88,
+      "separation_angle_upper_lower": [
+        126.889,
+        126.87
+      ],
+      "drag_coefficient": 1.53823,
+      "lift_coefficient": -2e-05,
+      "iterations": 1337,
+      "final_rms_pressure_log10": -9.001,
+      "seconds": 897.9
+    },
+    {
+      "mesh": "training mesh",
+      "cell_size_multiplier": null,
+      "nodes": 4492,
+      "wall_nodes": 63,
+      "wake_length": 1.8233,
+      "separation_angle": 134.183,
+      "separation_angle_upper_lower": [
+        134.228,
+        134.139
+      ],
+      "drag_coefficient": 1.54894,
+      "lift_coefficient": -0.00078,
+      "iterations": 273,
+      "final_rms_pressure_log10": -9.075,
+      "seconds": 5.7
+    }
+  ],
+  "grid_convergence": {
+    "drag_coefficient": {
+      "observed_order": 0.72,
+      "monotonic": true,
+      "extrapolated": 1.5449,
+      "gci_fine_percent": 0.54,
+      "gci_dataset_percent": 0.89
+    },
+    "wake_length": {
+      "observed_order": 1.72,
+      "monotonic": true,
+      "extrapolated": 2.2689,
+      "gci_fine_percent": 0.23,
+      "gci_dataset_percent": 0.75
+    },
+    "separation_angle": {
+      "observed_order": 2.38,
+      "monotonic": true,
+      "extrapolated": 126.6861,
+      "gci_fine_percent": 0.19,
+      "gci_dataset_percent": 0.98
+    }
+  },
+  "references": [
+    {
+      "name": "Dennis & Chang (1970)",
+      "method": "finite differences, steady equations",
+      "drag_coefficient": 1.522,
+      "wake_length": 2.345,
+      "separation_angle": 126.2,
+      "link": "https://doi.org/10.1017/S0022112070001428"
+    },
+    {
+      "name": "Gautier, Biau & Lamballais (2013)",
+      "method": "spectral, unbounded domain (fine grid, r = 40 D)",
+      "drag_coefficient": 1.4931,
+      "wake_length": 2.236,
+      "separation_angle": 126.39,
+      "link": "https://arxiv.org/abs/1310.6641"
+    }
+  ],
+  "literature_range": {
+    "drag_coefficient": [
+      1.48,
+      1.62
+    ],
+    "wake_length": [
+      2.13,
+      2.35
+    ],
+    "separation_angle": [
+      124.4,
+      127.3
+    ]
+  },
+  "acceptance": {
+    "drag_coefficient": [
+      1.49,
+      1.57
+    ],
+    "wake_length": [
+      2.15,
+      2.35
+    ],
+    "separation_angle": [
+      125.0,
+      128.0
+    ],
+    "gci_dataset_percent": 2.0
+  },
+  "su2": "8.5.0"
+}

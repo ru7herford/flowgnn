@@ -1,0 +1,27 @@
+# Check the model, the dataset and the page data; no trained weights are needed.
+name: tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Check model and observations
+        run: |
+          python tests/test_graph.py
+          python tests/test_model.py
+          python tests/test_data.py
+          python tests/test_inspect.py
+          python tests/test_page_data.py
+      - name: Check rendered interactions
+        run: |
+          pip install -r requirements-page.txt
+          playwright install --with-deps chromium
+          python scripts/check_page.py

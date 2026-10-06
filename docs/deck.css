@@ -1,0 +1,179 @@
+/* deck.css: the slide deck (scaled 1600 x 900 slides, page menu) and its controls. */
+
+/* --- Palette --- */
+:root {
+  color-scheme: light;
+  --paper: #eef4f8;
+  --panel: #ffffff;
+  --sunk: #deebf2;
+  --ink: #152b48;
+  --ink-2: #3d546a;
+  --ink-3: #53687b;
+  --rule: #cbd9e3;
+  --rule-strong: #91a8ba;
+  --accent: #087f8c;
+  --accent-hover: #244661;
+  --on-accent: #ffffff;
+  --font: "Space Grotesk", Arial, sans-serif;
+}
+
+:root {
+  --accent-tint: color-mix(in srgb, var(--accent) 10%, var(--paper));
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --rail-w: 200px;
+  --s: 1; /* slide scale, set by deck.js */
+}
+@media (max-width: 599px), (max-height: 480px) {
+  :root {
+    --rail-w: 40px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 18px/1.5 var(--font);
+  font-optical-sizing: auto;
+}
+a {
+  color: inherit;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.18em;
+}
+a:hover {
+  text-decoration-color: var(--accent);
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+output {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+code,
+pre,
+kbd {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+/* --- Slides: every page is one 1600 x 900 slide, scaled as a whole to fit the window. --- */
+/* Sizes inside a slide are in slide pixels. */
+main,
+body > footer {
+  display: block;
+  margin-left: var(--rail-w);
+}
+.frame {
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.frame:focus {
+  outline: none;
+}
+.fit {
+  position: relative;
+  width: calc(1600px * var(--s));
+  height: calc(900px * var(--s));
+}
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1600px;
+  height: 900px;
+  padding: 54px 72px 28px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(var(--s));
+  transform-origin: 0 0;
+  font-size: 27px;
+  line-height: 1.35;
+}
+.slide h2 {
+  flex: none;
+  margin: 0 0 20px;
+  max-width: 1300px;
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.slide p {
+  margin: 0 0 18px;
+  text-wrap: pretty;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+} /* the area under the title; every layout fills it */
+
+/* --- Rail: page number and title, current page marked --- */
+.rail {
+  position: fixed;
+  z-index: 10;
+  inset: 0 auto 0 0;
+  width: var(--rail-w);
+  display: flex;
+  align-items: center;
+  background: var(--sunk);
+}
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 20px;
+  width: 100%;
+}
+.rail li {
+  margin: 0;
+}
+.rail a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+}
+.rail .n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.rail a:hover {
+  color: var(--ink);
+}
+.rail a[aria-current="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.rail a[aria-current="true"] .n {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}

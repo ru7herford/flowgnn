@@ -1,0 +1,29 @@
+{
+  "description": "One network per input set and seed; everything else identical. Input sets are defined in src/graph.py. Why these settings: README, 'Why these numbers'.",
+  "input_sets": [
+    "M0",
+    "M1",
+    "M2",
+    "M3"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "model": {
+    "hidden": 64,
+    "layers": 12
+  },
+  "training": {
+    "epochs": 300,
+    "batch_cases": 4,
+    "learning_rate": 0.001,
+    "gradient_clip": 1.0,
+    "validate_every": 10
+  },
+  "evaluation": {
+    "snapshot_case": "triangle_05",
+    "snapshot_every": 10
+  }
+}

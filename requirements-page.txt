@@ -1,0 +1,2 @@
+# Optional: browser checks (scripts/check_page.py) and the README picture (scripts/make_cover.py).
+playwright

@@ -1,0 +1,28 @@
+{
+  "description": "Training replay for the page: the two shown networks (median seed by validation error in examples/train.json), retrained with identical settings, saving the prediction on the snapshot case every 2 epochs.",
+  "runs": [
+    {
+      "input_set": "M0",
+      "seed": 1
+    },
+    {
+      "input_set": "M3",
+      "seed": 2
+    }
+  ],
+  "model": {
+    "hidden": 64,
+    "layers": 12
+  },
+  "training": {
+    "epochs": 300,
+    "batch_cases": 4,
+    "learning_rate": 0.001,
+    "gradient_clip": 1.0,
+    "validate_every": 10
+  },
+  "evaluation": {
+    "snapshot_case": "triangle_05",
+    "snapshot_every": 2
+  }
+}

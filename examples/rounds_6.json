@@ -1,0 +1,25 @@
+{
+  "description": "Rounds study: M0 and M3, seed 0, 150 epochs, 6 message-passing rounds; otherwise as train.json. Compared in the README ('Why these numbers') and on the page's 'Where the error is' slide.",
+  "input_sets": [
+    "M0",
+    "M3"
+  ],
+  "seeds": [
+    0
+  ],
+  "model": {
+    "hidden": 64,
+    "layers": 6
+  },
+  "training": {
+    "epochs": 150,
+    "batch_cases": 4,
+    "learning_rate": 0.001,
+    "gradient_clip": 1.0,
+    "validate_every": 10
+  },
+  "evaluation": {
+    "snapshot_case": "triangle_05",
+    "snapshot_every": 10
+  }
+}

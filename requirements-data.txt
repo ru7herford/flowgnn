@@ -1,0 +1,6 @@
+# Dataset generation only (scripts/data/); SU2 8.5.0 is installed separately.
+numpy
+scipy
+matplotlib
+gmsh
+pyvista

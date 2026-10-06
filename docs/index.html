@@ -1,0 +1,328 @@
+<!doctype html>
+<!-- A graph neural network predicting flow around unseen shapes, from its recorded runs. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlowGNN · What must each point know to predict flow?</title>
+    <meta
+      name="description"
+      content="One graph neural network, trained four times with different inputs at each mesh point, predicts flow around shapes it never trained on. What each point is told, how far messages travel, and what the inputs change."
+    />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="deck.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="deck.js"></script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <nav class="rail" aria-label="Pages">
+      <div>
+        <ol>
+          <li><a href="#start"><span class="n">1</span>Start</a></li>
+          <li><a href="#task"><span class="n">2</span>The task</a></li>
+          <li><a href="#message"><span class="n">3</span>One round</a></li>
+          <li><a href="#reach"><span class="n">4</span>How far</a></li>
+          <li><a href="#inputs"><span class="n">5</span>Four networks</a></li>
+          <li><a href="#watch"><span class="n">6</span>Training</a></li>
+          <li><a href="#found"><span class="n">7</span>Results</a></li>
+          <li><a href="#where"><span class="n">8</span>Where the error is</a></li>
+          <li><a href="#influence"><span class="n">9</span>Influence</a></li>
+          <li><a href="#see"><span class="n">10</span>Explore</a></li>
+          <li><a href="#sources"><span class="n">11</span>Limits and code</a></li>
+        </ol>
+        <div class="rail-links">
+          <a href="https://github.com/ru7herford">GitHub ↗</a
+          ><a href="https://www.linkedin.com/in/varun-rao/">LinkedIn ↗</a>
+        </div>
+      </div>
+    </nav>
+    <main>
+      <section class="frame" id="start">
+        <div class="fit">
+          <article class="slide cover">
+            <h1>What must each point know to predict flow?</h1>
+            <p class="lead" id="hero-lead">I trained one graph neural network (GNN) four times, each time with different inputs at each mesh point.</p>
+            <div class="compare" id="compare">
+              <canvas id="hero-reference" aria-label="Flow around a test triangle, computed by the SU2 solver"></canvas>
+              <canvas id="hero-prediction" aria-label="The same flow, predicted by the graph neural network"></canvas>
+              <span class="tag left">SU2 (CFD solver)</span>
+              <span class="tag right" id="hero-tag">GNN: mesh + distance + shape</span>
+              <div class="divider" id="divider" role="slider" tabindex="0"
+                aria-label="Compare solver and network" aria-valuemin="0"
+                aria-valuemax="100" aria-valuenow="50"><span class="hint">drag to compare</span></div>
+            </div>
+            <div class="cover-foot">
+              <p class="byline">Varun Rao</p>
+              <div class="scales" id="hero-scale"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="task">
+        <div class="fit">
+          <article class="slide">
+            <h2>The task: predict the flow from the mesh</h2>
+            <p class="finding">Steady flow at Reynolds number 40: too slow for vortex shedding, so each shape has one answer.</p>
+            <ol class="steps">
+              <li><svg id="task-shape" viewBox="0 0 300 260" aria-label="An obstacle"></svg>
+                <h3>1 · An obstacle in a channel; the flow enters from the left</h3></li>
+              <li><canvas id="task-reference" aria-label="The solver's horizontal velocity"></canvas>
+                <h3>2 · <a class="key" href="https://su2code.github.io/">SU2</a> (a CFD solver) computes the reference flow</h3></li>
+              <li><svg id="task-graph" viewBox="0 0 300 260" aria-label="Mesh points joined by links"></svg>
+                <h3>3 · Each mesh point becomes a node, each mesh edge a link</h3></li>
+              <li><canvas id="task-prediction" aria-label="The network's horizontal velocity"></canvas>
+                <h3>4 · The GNN predicts velocity (u, v) and pressure p at each node</h3></li>
+            </ol>
+            <svg class="glyph-defs" aria-hidden="true">
+              <symbol id="g-ellipse" viewBox="0 0 44 26"><ellipse cx="22" cy="13" rx="17" ry="9"/></symbol>
+              <symbol id="g-rectangle" viewBox="0 0 44 26"><rect x="8" y="5" width="28" height="16"/></symbol>
+              <symbol id="g-airfoil" viewBox="0 0 44 26"><path d="M4 14C8 6 22 6 40 12C24 16 10 18 4 14Z"/></symbol>
+              <symbol id="g-triangle" viewBox="0 0 44 26"><path d="M8 4L38 13L8 22Z"/></symbol>
+            </svg>
+            <div class="splits">
+              <div class="split"><strong>34</strong><span>training shapes</span>
+                <ul><li><svg><use href="#g-ellipse"/></svg>12 ellipses</li><li><svg><use href="#g-rectangle"/></svg>12 rectangles</li><li><svg><use href="#g-airfoil"/></svg>10 airfoils</li></ul></div>
+              <div class="split"><strong>6</strong><span>validation shapes: they select the best epoch</span>
+                <ul><li><svg><use href="#g-ellipse"/></svg>2 ellipses</li><li><svg><use href="#g-rectangle"/></svg>2 rectangles</li><li><svg><use href="#g-airfoil"/></svg>2 airfoils</li></ul></div>
+              <div class="split"><strong>10</strong><span>test shapes, not used in training</span>
+                <ul><li><svg><use href="#g-triangle"/></svg>6 triangles<em>shape type not in training</em></li><li><svg><use href="#g-airfoil"/></svg>4 airfoils<em>new profiles and angles</em></li></ul></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="message">
+        <div class="fit">
+          <article class="slide">
+            <h2>Each round, information travels one more link</h2>
+            <p class="finding">One round is one layer of the GNN. Like a finite-volume stencil, it uses only a point's direct neighbours.</p>
+            <div class="round-grid">
+              <figure class="round-view">
+                <canvas id="round-mesh" aria-label="The test triangle's mesh: each point coloured by its influence on the ringed point after the current round"></canvas>
+                <div class="round-bar">
+                  <div class="influence-key" id="round-key"></div>
+                  <p class="readout" id="round-readout" aria-live="polite"></p>
+                </div>
+              </figure>
+              <div class="round-panel">
+                <svg id="message-mesh" viewBox="0 0 860 600" aria-label="The ringed point and its six neighbours, with the recorded messages of this round"></svg>
+                <p class="small">Zoom on the ringed point. Schematic positions; the links are the real ones. Each point has 64 numbers; the colours and labels show one.</p>
+                <div class="loop" id="message-loop" aria-label="The three steps of one round">
+                  <span class="step" data-phase="0">1 · Send</span><span class="step" data-phase="1">2 · Add up</span><span class="step" data-phase="2">3 · Update</span>
+                </div>
+                <p class="step-text" id="message-step"></p>
+                <div class="playback">
+                  <button class="btn icon" id="message-prev" aria-label="Back one step">‹</button>
+                  <button class="btn primary" id="message-play">Play</button>
+                  <button class="btn icon" id="message-next" aria-label="Forward one step">›</button>
+                  <output id="message-round"></output>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="reach">
+        <div class="fit">
+          <article class="slide">
+            <h2>After 12 rounds, the airfoil is still out of reach</h2>
+            <p class="finding" id="reach-finding"></p>
+            <div class="reach-stage">
+              <canvas id="reach-mesh" tabindex="0" aria-label="Points the selected point can reach after each round"></canvas>
+              <span class="corner-label">Click a point to select it</span>
+            </div>
+            <div class="reach-bar">
+              <div class="band-key" id="reach-key"></div>
+              <p class="readout" id="reach-readout" aria-live="polite"></p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="inputs">
+        <div class="fit">
+          <article class="slide">
+            <h2>Four networks with different inputs</h2>
+            <p class="finding">M0 gets only the mesh: it learns about the obstacle only from messages. M1 to M3 also get the obstacle distance or shape as inputs.</p>
+            <div class="model-key" id="model-key"></div>
+            <div class="inputs-grid">
+              <figure class="inputs-figure">
+                <svg id="inputs-drawing" viewBox="0 0 620 520" aria-label="One mesh point, its distance and direction to the obstacle, and the obstacle's size"></svg>
+              </figure>
+              <div class="rows">
+                <div class="columns">
+                  <div class="column"><h3 id="column-M0"></h3><dl id="row-mesh"></dl></div>
+                  <div class="column"><h3 id="column-M3"></h3><dl id="row-both"></dl></div>
+                </div>
+                <p class="note">M1 gets only the distance rows. M2 gets only the shape rows: the same six numbers at every point (a global input). Each link also gets its length and direction.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="watch">
+        <div class="fit">
+          <article class="slide">
+            <h2>With obstacle inputs, the network learns faster</h2>
+            <div class="learn-grid">
+              <div class="learn-maps">
+                <figure><figcaption>SU2</figcaption><canvas id="training-reference"></canvas></figure>
+                <figure><figcaption><span id="training-name-M0"></span><span id="training-error-M0"></span></figcaption><canvas id="training-M0"></canvas></figure>
+                <figure><figcaption><span id="training-name-M3"></span><span id="training-error-M3"></span></figcaption><canvas id="training-M3"></canvas></figure>
+                <div class="scales" id="training-scales"></div>
+              </div>
+              <div class="learn-side">
+                <p class="finding" id="training-finding"></p>
+                <p class="small">Replay: a separate training run of M0 and M3, with the same settings.</p>
+                <svg id="training-chart" viewBox="0 0 860 540" aria-label="Error on this triangle after each recorded epoch"></svg>
+                <div class="learn-bar">
+                  <div class="chips" id="training-view" role="group" aria-label="Show">
+                    <button class="chip" data-view="prediction" aria-pressed="true">Prediction</button>
+                    <button class="chip" data-view="error" aria-pressed="false">Error</button>
+                  </div>
+                  <div class="playback">
+                    <button class="btn primary" id="training-play">Play</button>
+                    <input type="range" class="scrub" id="training-scrub" min="0" value="0" aria-label="Epoch" />
+                    <output id="training-epoch"></output>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="found">
+        <div class="fit">
+          <article class="slide">
+            <h2>The shape inputs cut the error the most</h2>
+            <p class="finding">Distance alone decreases the error only on the airfoils.</p>
+            <p class="definition">ε<sub>u</sub> = ‖<b>u</b><sub>GNN</sub> − <b>u</b><sub>SU2</sub>‖ / ‖<b>u</b><sub>SU2</sub> − <b>U</b><sub>∞</sub>‖ over all mesh points, with <b>u</b> = (u, v). 0% is exact; 100% is the same as predicting the inflow <b>U</b><sub>∞</sub> everywhere.</p>
+            <svg id="results-chart" viewBox="0 0 1456 640" aria-label="Velocity error of the four networks against SU2 on the test shapes"></svg>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="where">
+        <div class="fit">
+          <article class="slide">
+            <h2>The error is largest beyond 12 links</h2>
+            <p class="finding">M0 and M1 have their largest error 15 to 60 links from the obstacle: outside their 12-link receptive field. The error also increases inside it, so the receptive field does not explain all of the error.</p>
+            <div class="where-grid">
+              <figure>
+                <svg id="hop-chart" viewBox="0 0 860 520" aria-label="Error against link distance from the obstacle"></svg>
+                <figcaption class="small">ε<sub>u</sub> in each band of link distance = Σ|<b>u</b><sub>GNN</sub> − <b>u</b><sub>SU2</sub>| / Σ|<b>u</b><sub>SU2</sub> − <b>U</b><sub>∞</sub>| over the points in the band; all 10 test shapes, 3 trained networks each.</figcaption>
+              </figure>
+              <table id="rounds-table" hidden>
+                <caption>More rounds help only M0<small>ε<sub>u</sub> on the validation shapes · seed 0 · 150 epochs</small></caption>
+                <thead><tr><th>Rounds</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="influence">
+        <div class="fit">
+          <article class="slide">
+            <h2>Shape inputs make the prediction depend on neighbours</h2>
+            <p class="finding">Influence of a point: how much the predicted u at the ringed point changes when the inputs of that point change.</p>
+            <div class="chips" id="influence-view" role="group" aria-label="Network"></div>
+            <div class="influence-grid">
+              <div>
+                <canvas id="influence-mesh" aria-label="Influence of each point on one network's prediction at the ringed point"></canvas>
+                <div class="reach-bar">
+                  <div class="influence-key" id="influence-key"></div>
+                  <p class="readout" id="influence-readout" aria-live="polite"></p>
+                </div>
+              </div>
+              <div class="influence-side">
+                <h3>Mean distance of the influence, in links</h3>
+                <div class="bars" id="influence-bars"></div>
+                <p class="small" id="influence-mean"></p>
+              </div>
+            </div>
+            <p class="small">Adapted from <a href="https://arxiv.org/abs/1806.03536">Xu et al. (2018)</a>: the derivative of the predicted u, not of a hidden state, with respect to each point's inputs. Backpropagation computes it: reverse-mode differentiation, as in an adjoint solver.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="see">
+        <div class="fit">
+          <article class="slide">
+            <h2>Explore any test shape</h2>
+            <p class="finding">M3 has the lowest mean error, but not the lowest error on every shape.</p>
+            <div class="see-grid">
+              <div class="maps" id="maps">
+                <figure><figcaption>SU2</figcaption><canvas id="reference"></canvas></figure>
+                <figure><figcaption id="prediction-title">GNN</figcaption><canvas id="prediction"></canvas></figure>
+                <figure><figcaption>Error</figcaption><canvas id="error"></canvas></figure>
+                <div class="map-key">
+                  <div class="scales" id="field-scales"></div>
+                  <p class="small" id="score-definition"></p>
+                </div>
+              </div>
+              <aside class="panel">
+                <span class="label">Test shape (not used in training)</span>
+                <div class="thumbs" id="shape-picker" role="group" aria-label="Test shape"></div>
+                <span class="label">Inputs: mesh +</span>
+                <div class="chips">
+                  <button class="chip" id="add-distance" aria-pressed="false">+ Distance</button>
+                  <button class="chip" id="add-shape" aria-pressed="false">+ Shape</button>
+                </div>
+                <span class="label" id="score-label"></span>
+                <div class="bars" id="score-bars"></div>
+                <span class="label">Show</span>
+                <div class="chips" id="field-choice" role="group" aria-label="Field">
+                  <button class="chip" data-field="0" aria-pressed="true" aria-label="Horizontal velocity u">u</button>
+                  <button class="chip" data-field="1" aria-pressed="false" aria-label="Vertical velocity v">v</button>
+                  <button class="chip" data-field="2" aria-pressed="false" aria-label="Pressure p">p</button>
+                </div>
+              </aside>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="frame" id="sources">
+        <div class="fit">
+          <article class="slide">
+            <h2>Limits and code</h2>
+            <div class="source-grid">
+              <div>
+                <div class="checks" id="checks"></div>
+                <h3>A known limit, and its usual fixes</h3>
+                <p class="small">A GNN with 12 layers sees 12 links. The usual fixes: more layers, coarse long-range links (<a href="https://arxiv.org/abs/2210.00612">multiscale graphs</a>), or a global input at every point (<a href="https://arxiv.org/abs/1806.01261">graph networks</a>). M2 and M3 test the last one.</p>
+                <div class="speed" id="speed" hidden></div>
+              </div>
+              <div>
+                <pre>pip install -r requirements.txt
+python flowgnn.py</pre>
+                <p class="small">Trains the four networks, 3 seeds each. Every setting and why: <a href="https://github.com/ru7herford/flowgnn#why-these-numbers">README</a>.</p>
+                <p>Code: <a href="https://github.com/ru7herford/flowgnn">github.com/ru7herford/flowgnn</a></p>
+                <h3>Sources</h3>
+                <ol class="sources">
+                  <li><a href="https://arxiv.org/abs/2010.03409">Pfaff et al. (2021), MeshGraphNets</a><span>graph networks on simulation meshes</span></li>
+                  <li><a href="https://arxiv.org/abs/1806.01261">Battaglia et al. (2018), graph networks</a><span>learning on connected points, global inputs</span></li>
+                  <li><a href="https://arxiv.org/abs/2210.00612">Fortunato et al. (2022), MultiScale MeshGraphNets</a><span>the reach limit on fine meshes</span></li>
+                  <li><a href="https://arxiv.org/abs/2105.02575">Harsch and Riedelbauch (2021)</a><span>steady flow predicted in one pass</span></li>
+                  <li><a href="https://arxiv.org/abs/1806.03536">Xu et al. (2018), influence distribution</a><span>which inputs change a node's output</span></li>
+                  <li><a href="https://doi.org/10.2514/1.J053813">Economon et al. (2016), SU2</a><span>the flow solver</span></li>
+                  <li><a href="https://doi.org/10.1017/S0022112070001428">Dennis and Chang (1970)</a><span>circle flow at Reynolds number 40, solver check</span></li>
+                  <li><a href="https://arxiv.org/abs/1310.6641">Gautier et al. (2013)</a><span>the same flow, second check</span></li>
+                </ol>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <div id="load-error" role="alert" hidden></div>
+    <noscript>The figures need JavaScript. The README has the results and run commands.</noscript>
+  </body>
+</html>
